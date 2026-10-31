@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Enviar fotos de actas</title>
+  <link rel="stylesheet" href="/mobile.css">
+</head>
+<body>
+  <main>
+    <h1>Enviar fotos de actas</h1>
+    <p>Selecciona varias imágenes de la galería o toma fotos. Se enviarán al formulario de la computadora y se analizarán una por una.</p>
+    <form id="formulario">
+      <label for="galeria">Fotos JPG o PNG (máximo 10 imágenes, 15 MB cada una)</label>
+      <input id="galeria" type="file" accept="image/jpeg,image/png" multiple>
+      <button id="abrirCamara" type="button">Tomar una foto</button>
+      <input id="camara" type="file" accept="image/jpeg,image/png" capture="environment" hidden>
+      <p id="cantidad">No hay fotos seleccionadas.</p>
+      <button id="enviar" type="submit" disabled>Enviar fotos</button>
+    </form>
+    <p id="estado" role="status"></p>
+  </main>
+  <script>
+    const token = new URLSearchParams(location.search).get('token');
+    history.replaceState(null, '', location.pathname);
+    const form = document.querySelector('#formulario');
+    const estado = document.querySelector('#estado');
+    const boton = document.querySelector('#enviar');
+    const galeria = document.querySelector('#galeria');
+    const camara = document.querySelector('#camara');
+    const cantidad = document.querySelector('#cantidad');
+    const maxFotos = 10;
+    const maxBytes = 15 * 1024 * 1024;
+    let fotos = [];
+
+    if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+      form.hidden = true;
+      estado.textContent = 'Este enlace no es válido. Genera un nuevo código QR desde la computadora.';
+      estado.classList.add('error');
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!fotos.length) return;
+
+      boton.disabled = true;
+      estado.classList.remove('error');
+      estado.textContent = `Enviando ${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'}...`;
+      const datos = new FormData();
+      fotos.forEach((foto) => datos.append('archivos', foto));
+      try {
+        const respuesta = await fetch(`/api/mobile/upload/${token}`, { method: 'POST', body: datos });
+        const resultado = await respuesta.json();
+        if (!respuesta.ok) throw new Error(resultado.error || 'No se pudieron enviar las fotos.');
+        form.hidden = true;
+        estado.textContent = `${resultado.cantidad} fotos enviadas. Ya puedes volver a la computadora.`;
+      } catch (fallo) {
+        estado.textContent = fallo.message;
+        estado.classList.add('error');
+        boton.disabled = false;
+      }
+    });
+
+    const actualizarFotos = (nuevas) => {
+      const candidatas = [...fotos, ...nuevas];
+      if (candidatas.length > maxFotos) {
+        estado.textContent = `Puedes enviar hasta ${maxFotos} imágenes.`;
+        estado.classList.add('error');
+        return;
+      }
+      const invalida = candidatas.find((foto) => !['image/jpeg', 'image/png'].includes(foto.type) || foto.size > maxBytes);
+      if (invalida) {
+        estado.textContent = 'Cada foto debe ser JPG o PNG de hasta 15 MB.';
+        estado.classList.add('error');
+        return;
+      }
+      fotos = candidatas;
+      cantidad.textContent = `${fotos.length} ${fotos.length === 1 ? 'foto seleccionada' : 'fotos seleccionadas'}.`;
+      boton.disabled = fotos.length === 0;
+      estado.textContent = '';
+      estado.classList.remove('error');
+    };
+
+    galeria.addEventListener('change', () => actualizarFotos([...galeria.files]));
+    camara.addEventListener('change', () => {
+      actualizarFotos([...camara.files]);
+      camara.value = '';
+    });
+    document.querySelector('#abrirCamara').addEventListener('click', () => camara.click());
+  </script>
+</body>
+</html>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Libro de actas parroquial</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='42' y='10' width='16' height='80' rx='3' fill='%23b8892b'/%3E%3Crect x='20' y='30' width='60' height='16' rx='3' fill='%23b8892b'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<canvas id="fondo"></canvas>
+
+<section id="acceso" class="acceso">
+  <div id="tarjetaAcceso" class="tarjeta-acceso">
+    <div class="giro-inner">
+      <form id="formAcceso" class="vidrio cara-acceso" aria-hidden="false">
+        <h1>Libro de actas</h1>
+        <p>Inicia sesión para consultar o digitalizar actas.</p>
+        <label class="campo"><span>Correo electrónico</span><input id="correo" type="email" required autocomplete="email"></label>
+        <label class="campo"><span>Contraseña</span><input id="clave" type="password" required minlength="6" autocomplete="current-password"></label>
+        <button class="primario" type="submit">Iniciar sesión</button>
+        <p>¿Todavía no tienes cuenta?</p>
+        <button class="secundario" type="button" data-modo="crear">Crear cuenta</button>
+      </form>
+      <form id="formRegistro" class="vidrio cara-acceso" aria-hidden="true" inert>
+        <h1>Crear cuenta</h1>
+        <p>Completa tus datos para registrarte.</p>
+        <label class="campo"><span>Nombre</span><input id="nombreCuenta" type="text" required autocomplete="name"></label>
+        <label class="campo"><span>Correo electrónico</span><input id="correoCuenta" type="email" required autocomplete="email"></label>
+        <label class="campo"><span>Contraseña (mínimo 6 caracteres)</span><input id="claveCuenta" type="password" required minlength="6" autocomplete="new-password"></label>
+        <label class="campo"><span>Confirmar contraseña</span><input id="confirmarClave" type="password" required minlength="6" autocomplete="new-password"></label>
+        <button class="primario" type="submit">Registrarme</button>
+        <p>¿Ya tienes una cuenta?</p>
+        <button class="secundario" type="button" data-modo="entrar">Volver a iniciar sesión</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<div id="app" hidden>
+  <header class="barra vidrio">
+    <div class="marca"><span class="cruz-mini"></span><strong>Libro de actas</strong></div>
+    <div class="sesion">
+      <span id="usuario"></span>
+      <span class="rol" id="rol"></span>
+      <button class="secundario" id="activarAdmin" type="button" hidden>Activar administrador</button>
+      <button class="secundario" id="salir" type="button">Salir</button>
+    </div>
+  </header>
+  <main id="contenido" class="contenido">
+    <section class="dashboard" aria-label="Resumen del registro">
+      <div class="dashboard-hero vidrio">
+        <div>
+          <p class="dashboard-eyebrow">LIBRO DE ACTAS · REGISTRO PARROQUIAL</p>
+          <h1 id="dashboardTitulo">Tu registro, de un vistazo</h1>
+          <p id="dashboardDescripcion">Consulta la actividad reciente y las actas registradas.</p>
+        </div>
+        <div class="dashboard-accion">
+          <span class="dashboard-saludo" id="dashboardRol"></span>
+          <button class="primario" id="dashboardAccion" type="button">Explorar registros</button>
+        </div>
+        <span class="hero-decoracion" aria-hidden="true"></span>
+      </div>
+      <div class="dashboard-estadisticas" id="dashboardEstadisticas" aria-label="Indicadores del registro"></div>
+      <section class="dashboard-actividad vidrio" aria-labelledby="tituloActividad">
+        <div class="actividad-cabecera">
+          <div>
+            <p class="dashboard-eyebrow">PANORAMA</p>
+            <h2 id="tituloActividad">Actividad reciente</h2>
+          </div>
+          <p id="resumenActividad" class="ayuda"></p>
+        </div>
+        <div id="graficoActividad" class="grafico-actividad" role="img" aria-label="Actas registradas durante los últimos seis meses"></div>
+        <div class="actividad-pie"><span><span class="leyenda-punto"></span>Actas creadas</span><span id="periodoActividad"></span></div>
+      </section>
+    </section>
+    <section id="captura" class="vidrio panel">
+      <h2 id="tituloForm">Digitalizar acta</h2>
+      <div class="entradas">
+        <button class="primario" type="button" id="abrirCamara">Escanear con la cámara</button>
+        <button class="secundario" type="button" id="elegir">Elegir imágenes o PDF</button>
+        <button class="secundario" type="button" id="enviarDesdeCelular">Enviar desde el celular (QR)</button>
+        <input id="archivo" type="file" accept="image/jpeg,image/png,application/pdf" multiple hidden>
+      </div>
+      <p class="ayuda">Puedes cargar hasta 10 imágenes o documentos por lote. Cada uno se analiza por separado y genera un acta independiente; revisa y guarda cada registro antes de pasar al siguiente. En las imágenes podrás dibujar un contorno y ajustar sus puntos.</p>
+      <div id="camara" class="camara" hidden>
+        <div class="marco" id="marco"><video id="video" playsinline muted></video><canvas id="guia"></canvas></div>
+        <div class="fila">
+          <button class="primario" type="button" id="capturar">Capturar acta</button>
+          <button class="secundario" type="button" id="cerrarCamara">Cerrar cámara</button>
+        </div>
+      </div>
+      <div id="vista" class="vista" hidden></div>
+      <div id="controlesRecorte" class="entradas controles-recorte" hidden>
+        <p class="ayuda">Arrastra los puntos para seguir el contorno del acta. Toca un borde para añadir un punto; arrastra dentro para mover todo el contorno, o fuera para dibujar otra selección.</p>
+        <button class="secundario" id="agregarPuntoRecorte" type="button">Añadir punto</button>
+        <button class="secundario" id="reiniciarPuntosRecorte" type="button">Reiniciar contorno</button>
+        <button class="primario" id="confirmarRecorte" type="button">Usar selección y leer</button>
+        <button class="secundario" id="otraImagen" type="button">Elegir otra imagen</button>
+      </div>
+      <p id="estadoIA" class="ayuda" role="status"></p>
+      <button class="secundario" id="omitirImagen" type="button" hidden>Omitir esta imagen y continuar</button>
+      <form id="formulario">
+        <div id="campos" class="campos"></div>
+        <div class="fila">
+          <button class="primario" type="submit">Guardar acta</button>
+          <button class="secundario" type="button" id="cancelar" hidden>Cancelar edición</button>
+        </div>
+      </form>
+    </section>
+    <section class="registro">
+      <div class="encabezado">
+        <div>
+          <h2>Registro en vivo</h2>
+          <div class="estado ayuda"><span><span class="punto" id="punto"></span><span id="conexion">Conectando</span></span><span id="contador"></span></div>
+        </div>
+        <input id="buscar" type="search" placeholder="Buscar por nombre, padres, libro o folio" aria-label="Buscar actas">
+      </div>
+      <div id="rejilla" class="rejilla"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="visor" class="visor">
+  <button class="cerrar" id="cerrarVisor" type="button" aria-label="Cerrar">×</button>
+  <div id="visorMedia" class="visor-media"></div>
+  <div id="visorDatos" class="visor-datos"></div>
+</dialog>
+<dialog id="dialogAdmin" class="admin-dialog">
+  <form id="formAdmin">
+    <h2>Activar administrador</h2>
+    <p>Ingresa el código privado de activación. Solo funciona si todavía no existe un administrador.</p>
+    <label class="campo"><span>Código de activación</span><input id="codigoAdmin" type="password" required autocomplete="off"></label>
+    <div class="fila">
+      <button class="primario" id="confirmarAdmin" type="submit">Activar</button>
+      <button class="secundario" id="cerrarAdmin" type="button">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="dialogQR" class="qr-dialog">
+  <div class="qr-contenido">
+    <h2>Enviar foto desde el celular</h2>
+    <p>Conecta ambos dispositivos a la misma Wi‑Fi y escanea este código QR. El enlace funciona por 10 minutos y permite enviar hasta 10 fotos, que se analizarán por separado.</p>
+    <img id="codigoQR" alt="Código QR temporal para enviar varias fotos">
+    <p id="estadoQR" class="qr-estado" role="status">Preparando código...</p>
+    <button class="secundario" id="cerrarQR" type="button">Cerrar</button>
+  </div>
+</dialog>
+<div id="avisos" class="avisos" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+:root{font-family:Tahoma,Geneva,sans-serif;color:#1b2433;background:linear-gradient(160deg,#faf8f1,#e6eef8 55%,#f4ecd6);font-synthesis:none}
+    *{box-sizing:border-box}
+    body{min-height:100vh;margin:0;padding:24px;display:grid;place-items:center}
+    main{width:min(440px,100%);padding:28px;border:1px solid rgba(255,255,255,.85);border-radius:24px;background:rgba(255,255,255,.8);box-shadow:0 12px 40px rgba(31,58,95,.15);display:grid;gap:18px}
+    h1{margin:0;color:#1f3a5f;font-size:25px}
+    p{margin:0;line-height:1.55}
+    label{display:grid;gap:8px;font-weight:700;color:#1f3a5f}
+    input{width:100%;padding:12px;border:1px solid rgba(31,58,95,.25);border-radius:10px;background:#fff}
+    button{padding:12px 18px;border:0;border-radius:12px;background:linear-gradient(135deg,#1f3a5f,#3d6199);color:white;font:inherit;font-weight:700}
+    button:disabled{opacity:.6}
+    #estado{min-height:1.5em;color:#5b6679}
+    #estado.error{color:#a43c3c}
