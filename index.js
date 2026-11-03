@@ -17,10 +17,7 @@ const codigoAdmin = process.env.ADMIN_SETUP_CODE || '';
 const puerto = process.env.PORT || 3000;
 const sesionesMovil = new Map();
 
-if (faltantes.length) throw new Error(`Configura ${faltantes.join(', ')} en el archivo .env (usa .env.example como guía)`);
-if (codigoAdmin && codigoAdmin.length < 32) throw new Error('ADMIN_SETUP_CODE debe tener al menos 32 caracteres');
-
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+const supabase = faltantes.length ? null : createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
@@ -125,6 +122,9 @@ const limpiarSesionesMovil = setInterval(() => {
 limpiarSesionesMovil.unref();
 
 const autenticar = (roles) => async (req, res, next) => {
+  if (!supabase) {
+    return res.status(503).json({ error: 'El servidor no está configurado. Añade SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY en las variables de entorno de Vercel.' });
+  }
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return res.status(401).json({ error: 'Sesión no válida' });
@@ -152,11 +152,15 @@ app.get('/mobile', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
+  if (faltantes.length) {
+    return res.status(503).json({ error: `Faltan variables de entorno en Vercel: ${faltantes.join(', ')}.` });
+  }
   res.json({ url: process.env.SUPABASE_URL, anonKey: process.env.SUPABASE_ANON_KEY, adminSetupEnabled: Boolean(codigoAdmin) });
 });
 
 app.post('/api/admin/claim', autenticar(['admin', 'editor', 'lector']), async (req, res) => {
   if (!codigoAdmin) return res.status(503).json({ error: 'La activación de administrador no está configurada en el servidor' });
+  if (codigoAdmin.length < 32) return res.status(503).json({ error: 'ADMIN_SETUP_CODE debe tener al menos 32 caracteres' });
   const codigoIngresado = Buffer.from(typeof req.body?.code === 'string' ? req.body.code : '');
   const codigoEsperado = Buffer.from(codigoAdmin);
   if (codigoIngresado.length !== codigoEsperado.length || !crypto.timingSafeEqual(codigoIngresado, codigoEsperado)) {
