@@ -982,7 +982,11 @@ const eventos = () => {
       }
       if (!data.user) throw new Error('Supabase no devolvió la cuenta creada. Inténtalo de nuevo.');
       if (data.user.identities?.length === 0) {
-        return aviso('No se pudo crear la cuenta. Revisa el correo o intenta iniciar sesión.', 'error');
+        const correo = $('#correoCuenta').value.trim();
+        const { error: resendError } = await e.cliente.auth.resend({ type: 'signup', email: correo });
+        if (resendError) throw resendError;
+        mostrarCodigoRegistro(correo);
+        return aviso('Ese correo ya tiene una cuenta pendiente. Te enviamos otro código para verificarla.');
       }
       mostrarCodigoRegistro($('#correoCuenta').value.trim());
       aviso('Te enviamos un código de un solo uso por correo.');
