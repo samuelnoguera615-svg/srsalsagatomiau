@@ -856,6 +856,7 @@ const entrar = async () => {
   e.rol = perfil?.rol || 'lector';
   $('#usuario').textContent = perfil?.nombre || e.sesion.user.email;
   $('#rol').textContent = roles[e.rol];
+  $('#gestionarRoles').hidden = e.rol !== 'admin';
   $('#activarAdmin').hidden = !e.adminSetupEnabled || e.rol === 'admin';
   $('#acceso').hidden = true;
   $('#app').hidden = false;
@@ -881,8 +882,43 @@ const salir = () => {
 };
 
 const eventos = () => {
+  let esperandoCodigoRegistro = false;
+  let correoPendiente = '';
+
+  const mostrarCodigoRegistro = (correo) => {
+    esperandoCodigoRegistro = true;
+    correoPendiente = correo;
+    $('#datosRegistro').hidden = true;
+    $('#ayudaCodigoCuenta').textContent = `Escribe el código de 6 dígitos que enviamos a ${correo}.`;
+    $('#ayudaCodigoCuenta').hidden = false;
+    $('#campoCodigoCuenta').hidden = false;
+    $('#codigoCuenta').required = true;
+    $('#enviarRegistro').textContent = 'Verificar código';
+    $('#reenviarCodigoCuenta').hidden = false;
+    $('#volverRegistro').hidden = false;
+    $('#preguntaCuenta').hidden = true;
+    $('#modoAccesoRegistro').hidden = true;
+    $('#codigoCuenta').focus({ preventScroll: true });
+  };
+
+  const volverADatosRegistro = () => {
+    esperandoCodigoRegistro = false;
+    correoPendiente = '';
+    $('#datosRegistro').hidden = false;
+    $('#ayudaCodigoCuenta').hidden = true;
+    $('#campoCodigoCuenta').hidden = true;
+    $('#codigoCuenta').required = false;
+    $('#codigoCuenta').value = '';
+    $('#enviarRegistro').textContent = 'Registrarme';
+    $('#reenviarCodigoCuenta').hidden = true;
+    $('#volverRegistro').hidden = true;
+    $('#preguntaCuenta').hidden = false;
+    $('#modoAccesoRegistro').hidden = false;
+  };
+
   const cambiarModoAcceso = (modo) => {
     const creando = modo === 'crear';
+    if (!creando) volverADatosRegistro();
     const tarjeta = $('#tarjetaAcceso');
     const inicio = $('#formAcceso');
     const registro = $('#formRegistro');
@@ -911,6 +947,21 @@ const eventos = () => {
   $('#confirmarClave').addEventListener('input', () => $('#confirmarClave').setCustomValidity(''));
   $('#formRegistro').addEventListener('submit', async (ev) => {
     ev.preventDefault();
+    if (esperandoCodigoRegistro) {
+      try {
+        const { error } = await e.cliente.auth.verifyOtp({
+          email: correoPendiente,
+          token: $('#codigoCuenta').value.trim(),
+          type: 'signup'
+        });
+        if (error) return aviso(error.message, 'error');
+        aviso('Correo verificado. Tu cuenta está lista.');
+      } catch (fallo) {
+        aviso(`No se pudo verificar el código: ${fallo.message}`, 'error');
+      }
+      return;
+    }
+
     const clave = $('#claveCuenta').value;
     const confirmar = $('#confirmarClave');
     if (clave !== confirmar.value) {
@@ -925,11 +976,36 @@ const eventos = () => {
         options: { data: { nombre: $('#nombreCuenta').value.trim() } }
       });
       if (error) return aviso(error.message, 'error');
-      aviso(data.session ? 'Cuenta creada' : 'Cuenta creada. Revisa tu correo para confirmar la cuenta.');
+      if (data.session) {
+        aviso('Cuenta creada');
+        return;
+      }
+      if (!data.user) throw new Error('Supabase no devolvió la cuenta creada. Inténtalo de nuevo.');
+      if (data.user.identities?.length === 0) {
+        return aviso('No se pudo crear la cuenta. Revisa el correo o intenta iniciar sesión.', 'error');
+      }
+      mostrarCodigoRegistro($('#correoCuenta').value.trim());
+      aviso('Te enviamos un código de un solo uso por correo.');
     } catch (fallo) {
       aviso(`No se pudo crear la cuenta: ${fallo.message}`, 'error');
     }
   });
+
+  $('#reenviarCodigoCuenta').addEventListener('click', async () => {
+    const boton = $('#reenviarCodigoCuenta');
+    boton.disabled = true;
+    try {
+      const { error } = await e.cliente.auth.resend({ type: 'signup', email: correoPendiente });
+      if (error) throw error;
+      aviso('Enviamos otro código de un solo uso.');
+    } catch (fallo) {
+      aviso(`No se pudo reenviar el código: ${fallo.message}`, 'error');
+    } finally {
+      boton.disabled = false;
+    }
+  });
+
+  $('#volverRegistro').addEventListener('click', volverADatosRegistro);
 
   $('#salir').addEventListener('click', () => e.cliente.auth.signOut());
   $('#dashboardAccion').addEventListener('click', () => {
@@ -946,6 +1022,26 @@ const eventos = () => {
   $('#dialogQR').addEventListener('close', detenerTransferenciaMovil);
   $('#activarAdmin').addEventListener('click', () => $('#dialogAdmin').showModal());
   $('#cerrarAdmin').addEventListener('click', () => $('#dialogAdmin').close());
+  $('#gestionarRoles').addEventListener('click', () => $('#dialogRoles').showModal());
+  $('#cerrarRoles').addEventListener('click', () => $('#dialogRoles').close());
+  $('#formRoles').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const boton = $('#guardarRol');
+    boton.disabled = true;
+    try {
+      const resultado = await api('/api/admin/users/role', {
+        method: 'POST',
+        json: { email: $('#correoRol').value, role: $('#nuevoRol').value }
+      });
+      $('#dialogRoles').close();
+      ev.target.reset();
+      aviso(`Rol actualizado para ${resultado.email}: ${roles[resultado.role]}`);
+    } catch (fallo) {
+      aviso(fallo.message, 'error');
+    } finally {
+      boton.disabled = false;
+    }
+  });
   $('#formAdmin').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const boton = $('#confirmarAdmin');
@@ -954,6 +1050,7 @@ const eventos = () => {
       await api('/api/admin/claim', { method: 'POST', json: { code: $('#codigoAdmin').value } });
       e.rol = 'admin';
       $('#rol').textContent = roles.admin;
+      $('#gestionarRoles').hidden = false;
       $('#activarAdmin').hidden = true;
       $('#captura').hidden = false;
       $('#contenido').classList.remove('solo-lectura');

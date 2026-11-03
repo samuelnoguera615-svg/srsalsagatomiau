@@ -175,6 +175,39 @@ app.post('/api/admin/claim', autenticar(['admin', 'editor', 'lector']), async (r
   res.json({ ok: true });
 });
 
+app.post('/api/admin/users/role', autenticar(['admin']), async (req, res) => {
+  const correo = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  const rol = req.body?.role;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    return res.status(400).json({ error: 'Escribe un correo electrónico válido.' });
+  }
+  if (!['admin', 'editor', 'lector'].includes(rol)) {
+    return res.status(400).json({ error: 'El rol debe ser admin, editor o lector.' });
+  }
+
+  let usuario = null;
+  for (let pagina = 1; pagina <= 100; pagina += 1) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page: pagina, perPage: 1000 });
+    if (error) {
+      console.error('No se pudieron consultar las cuentas:', error.message);
+      return res.status(502).json({ error: 'No se pudieron consultar las cuentas. Inténtalo de nuevo.' });
+    }
+    usuario = data.users.find((cuenta) => cuenta.email?.toLowerCase() === correo) || null;
+    if (usuario || data.users.length < 1000) break;
+  }
+  if (!usuario) return res.status(404).json({ error: 'No hay una cuenta registrada con ese correo.' });
+  if (usuario.id === req.usuario.id) {
+    return res.status(400).json({ error: 'No puedes cambiar tu propio rol desde esta pantalla.' });
+  }
+
+  const { data, error } = await supabase.from('perfiles').update({ rol }).eq('id', usuario.id).select('rol').single();
+  if (error) {
+    console.error('No se pudo actualizar el rol:', error.message);
+    return res.status(500).json({ error: 'No se pudo actualizar el rol de esa cuenta.' });
+  }
+  res.json({ email: usuario.email, role: data.rol });
+});
+
 app.post('/api/mobile/sessions', autenticar(editores), async (req, res) => {
   const host = ipLocal();
   if (!host) return res.status(503).json({ error: 'No se encontró la dirección Wi-Fi de esta computadora' });

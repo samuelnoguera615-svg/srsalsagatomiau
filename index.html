@@ -25,13 +25,19 @@
       <form id="formRegistro" class="vidrio cara-acceso" aria-hidden="true" inert>
         <h1>Crear cuenta</h1>
         <p>Completa tus datos para registrarte.</p>
-        <label class="campo"><span>Nombre</span><input id="nombreCuenta" type="text" required autocomplete="name"></label>
-        <label class="campo"><span>Correo electrónico</span><input id="correoCuenta" type="email" required autocomplete="email"></label>
-        <label class="campo"><span>Contraseña (mínimo 6 caracteres)</span><input id="claveCuenta" type="password" required minlength="6" autocomplete="new-password"></label>
-        <label class="campo"><span>Confirmar contraseña</span><input id="confirmarClave" type="password" required minlength="6" autocomplete="new-password"></label>
-        <button class="primario" type="submit">Registrarme</button>
-        <p>¿Ya tienes una cuenta?</p>
-        <button class="secundario" type="button" data-modo="entrar">Volver a iniciar sesión</button>
+        <div id="datosRegistro" class="grupo-registro">
+          <label class="campo"><span>Nombre</span><input id="nombreCuenta" type="text" required autocomplete="name"></label>
+          <label class="campo"><span>Correo electrónico</span><input id="correoCuenta" type="email" required autocomplete="email"></label>
+          <label class="campo"><span>Contraseña (mínimo 6 caracteres)</span><input id="claveCuenta" type="password" required minlength="6" autocomplete="new-password"></label>
+          <label class="campo"><span>Confirmar contraseña</span><input id="confirmarClave" type="password" required minlength="6" autocomplete="new-password"></label>
+        </div>
+        <p id="ayudaCodigoCuenta" hidden></p>
+        <label id="campoCodigoCuenta" class="campo" hidden><span>Código de un solo uso</span><input id="codigoCuenta" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label>
+        <button class="primario" id="enviarRegistro" type="submit">Registrarme</button>
+        <button class="secundario" id="reenviarCodigoCuenta" type="button" hidden>Enviar otro código</button>
+        <button class="secundario" id="volverRegistro" type="button" hidden>Volver a mis datos</button>
+        <p id="preguntaCuenta">¿Ya tienes una cuenta?</p>
+        <button class="secundario" id="modoAccesoRegistro" type="button" data-modo="entrar">Volver a iniciar sesión</button>
       </form>
     </div>
   </div>
@@ -43,6 +49,7 @@
     <div class="sesion">
       <span id="usuario"></span>
       <span class="rol" id="rol"></span>
+      <button class="secundario" id="gestionarRoles" type="button" hidden>Gestionar roles</button>
       <button class="secundario" id="activarAdmin" type="button" hidden>Activar administrador</button>
       <button class="secundario" id="salir" type="button">Salir</button>
     </div>
@@ -134,6 +141,24 @@
     <div class="fila">
       <button class="primario" id="confirmarAdmin" type="submit">Activar</button>
       <button class="secundario" id="cerrarAdmin" type="button">Cancelar</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="dialogRoles" class="admin-dialog">
+  <form id="formRoles">
+    <h2>Gestionar roles</h2>
+    <p>Solo un administrador puede cambiar el rol de otra cuenta registrada. No puedes cambiar tu propio rol aquí.</p>
+    <label class="campo"><span>Correo de la cuenta</span><input id="correoRol" type="email" required autocomplete="off"></label>
+    <label class="campo"><span>Nuevo rol</span>
+      <select id="nuevoRol" required>
+        <option value="lector">Lector</option>
+        <option value="editor">Editor</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </label>
+    <div class="fila">
+      <button class="primario" id="guardarRol" type="submit">Guardar rol</button>
+      <button class="secundario" id="cerrarRoles" type="button">Cancelar</button>
     </div>
   </form>
 </dialog>
