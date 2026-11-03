@@ -268,9 +268,13 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
 
-app.listen(puerto, '0.0.0.0', () => {
-  const host = ipLocal();
-  console.log(`Servidor en http://localhost:${puerto}`);
-  if (host) console.log(`Acceso desde el celular (misma Wi-Fi): http://${host}:${puerto}`);
-  else console.warn('No se detectó una IP Wi-Fi; configura LAN_HOST en .env si la computadora tiene varias redes.');
-});
+if (process.env.VERCEL !== '1') {
+  app.listen(puerto, '0.0.0.0', () => {
+    const host = ipLocal();
+    console.log(`Servidor en http://localhost:${puerto}`);
+    if (host) console.log(`Acceso desde el celular (misma Wi-Fi): http://${host}:${puerto}`);
+    else console.warn('No se detectó una IP Wi-Fi; configura LAN_HOST en .env si la computadora tiene varias redes.');
+  });
+}
+
+export default app;
