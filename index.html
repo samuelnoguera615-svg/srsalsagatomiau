@@ -32,7 +32,7 @@
           <label class="campo"><span>Confirmar contraseña</span><input id="confirmarClave" type="password" required minlength="6" autocomplete="new-password"></label>
         </div>
         <p id="ayudaCodigoCuenta" hidden></p>
-        <label id="campoCodigoCuenta" class="campo" hidden><span>Código de un solo uso</span><input id="codigoCuenta" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label>
+        <label id="campoCodigoCuenta" class="campo" hidden><span>Código de un solo uso</span><input id="codigoCuenta" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{1,12}" maxlength="12"></label>
         <button class="primario" id="enviarRegistro" type="submit">Registrarme</button>
         <button class="secundario" id="reenviarCodigoCuenta" type="button" hidden>Enviar otro código</button>
         <button class="secundario" id="volverRegistro" type="button" hidden>Volver a mis datos</button>
